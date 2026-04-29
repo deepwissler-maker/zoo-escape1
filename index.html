@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Zoo Escape - Accueil</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="menu-box">
+        <h1>ZOO ESCAPE</h1>
+        <a href="jeu.html" class="btn play">JOUER</a><br>
+        <a href="boutique.html" class="btn shop">BOUTIQUE</a>
+        <div class="stats">🍎 Pommes récoltées : <span id="val-coins">0</span></div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        // On affiche les vraies pièces dès l'allumage
+        document.getElementById('val-coins').innerText = totalCoins;
+    </script>
+</body>
+</html>

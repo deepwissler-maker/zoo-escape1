@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Zoo Escape - Boutique</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .shop-container { display: flex; gap: 20px; justify-content: center; margin-top: 30px; }
+        .char-card { 
+            background: rgba(255,255,255,0.1); 
+            padding: 20px; 
+            border-radius: 15px; 
+            width: 180px;
+            border: 2px solid transparent;
+        }
+        .char-card.selected { border-color: #00ff00; background: rgba(0,255,0,0.1); }
+        .char-img { width: 80px; height: 80px; margin-bottom: 10px; object-fit: contain; }
+        .price { color: #ffcc00; font-weight: bold; margin: 10px 0; }
+        .buy-btn { 
+            background: #3498db; color: white; border: none; padding: 8px 15px; 
+            border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold;
+        }
+        .buy-btn.owned { background: #2ecc71; }
+        .buy-btn:disabled { background: #555; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div class="menu-box" style="width: 80%;">
+        <h1>BOUTIQUE</h1>
+        <div class="stats">Tes Pommes : <span id="coin-display">0</span> 🍎</div>
+
+        <div class="shop-container" id="shop-items">
+            </div>
+
+        <br>
+        <a href="index.html" class="btn shop" style="background: #95a5a6; border-bottom: 5px solid #7f8c8d;">RETOUR</a>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        const shopDiv = document.getElementById('shop-items');
+        const coinDisp = document.getElementById('coin-display');
+
+        function renderShop() {
+            coinDisp.innerText = totalCoins;
+            shopDiv.innerHTML = '';
+
+            const characters = [
+                { id: 'Lion', name: 'Lion', price: 0, img: 'https://labs.phaser.io/assets/sprites/phaser-dude.png' },
+                { id: 'Singe', name: 'Singe', price: 50, img: 'https://labs.phaser.io/assets/sprites/orange-cat1.png' },
+                { id: 'Elephant', name: 'Elephant', price: 150, img: 'https://labs.phaser.io/assets/sprites/bsquadron1.png' }
+            ];
+
+            characters.forEach(char => {
+                const isOwned = ownedCharacters.includes(char.id);
+                const isSelected = selectedCharacter === char.id;
+                
+                const card = document.createElement('div');
+                card.className = `char-card ${isSelected ? 'selected' : ''}`;
+                
+                card.innerHTML = `
+                    <img src="${char.img}" class="char-img">
+                    <div style="font-weight:bold">${char.name}</div>
+                    <div class="price">${isOwned ? 'Possédé' : char.price + ' 🍎'}</div>
+                    <button class="buy-btn ${isOwned ? 'owned' : ''}" 
+                        ${!isOwned && totalCoins < char.price ? 'disabled' : ''}
+                        onclick="handleAction('${char.id}', ${char.price}, ${isOwned})">
+                        ${isOwned ? (isSelected ? 'ÉQUIPÉ' : 'CHOISIR') : 'ACHETER'}
+                    </button>
+                `;
+                shopDiv.appendChild(card);
+            });
+        }
+
+        function handleAction(id, price, isOwned) {
+            if (isOwned) {
+                selectedCharacter = id;
+                localStorage.setItem('selectedChar', id);
+            } else {
+                if (totalCoins >= price) {
+                    totalCoins -= price;
+                    ownedCharacters.push(id);
+                    localStorage.setItem('zooCoins', totalCoins);
+                    localStorage.setItem('ownedChars', JSON.stringify(ownedCharacters));
+                }
+            }
+            renderShop();
+        }
+
+        renderShop();
+    </script>
+</body>
+</html>
