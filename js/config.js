@@ -1,25 +1,17 @@
-// Variables de sauvegarde
-var totalCoins = parseInt(localStorage.getItem('zooCoins')) || 0;
-var selectedCharacter = localStorage.getItem('selectedChar') || 'Lion';
-var ownedCharacters = JSON.parse(localStorage.getItem('ownedChars')) || ['Lion'];
-var isGameOver = false;
+const SETTINGS = {
+    gravity: 1000,
+    thrust: -2200,
+    startSpeed: 6,
+    maxSpeed: 18,
+    spawnDelay: 1200
+};
 
-// Variables globales pour Phaser
-var player, background, ground, obstacles;
+let player, background, ground, obstacles;
+let isGameOver = false;
 
 const gameConfig = {
     type: Phaser.AUTO,
-    scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: 800,
-        height: 450
-    },
-    physics: {
-        default: 'arcade',
-        arcade: {
-            gravity: { y: 1000 },
-            debug: false
-        }
-    }
+    width: 800,
+    height: 450,
+    physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } }
 };
