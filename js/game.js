@@ -1,123 +1,178 @@
 // ==========================================
-// 1. TES RÉGLAGES (MODIFIE ICI UNIQUEMENT)
+// 1. CONFIGURATION DES SENSATIONS (TES CHIFFRES)
 // ==========================================
 const SETTINGS = {
-    gravity: 800,        // Puissance qui tire vers le bas
-    jumpForce: -350,     // Puissance du saut (plus c'est haut, plus il saute)
-    startSpeed: 5,       // Vitesse du sol au début
-    maxSpeed: 15,        // Vitesse maximum
-    spawnDelay: 1400,    // Temps entre chaque obstacle (en millisecondes)
+    gravity: 1000,
+    thrust: -2200,      // Puissance du jetpack
+    startSpeed: 6,
+    maxSpeed: 18,
+    spawnDelay: 1200,
+    invincibilityTime: 2000
 };
 
 // ==========================================
-// 2. LOGIQUE TECHNIQUE (NE PAS TOUCHER)
+// 2. MOTEUR DU JEU (NE PLUS TOUCHER)
 // ==========================================
 class MainScene extends Phaser.Scene {
     constructor() { super('MainScene'); }
 
     init() {
-        // On remet les variables à zéro au début
         this.gameSpeed = SETTINGS.startSpeed;
         this.score = 0;
+        this.coinsCollected = 0;
         this.lives = 3;
         this.isInvincible = false;
-        this.isJumping = false;
+        this.hasShield = false;
+        this.hasMagnet = false;
+        this.isThrusting = false;
     }
 
     preload() {
-        // Chargement des images (URLs inchangées pour éviter les bugs)
+        // Chargement complet des assets
         this.load.image('bg', 'https://labs.phaser.io/assets/skies/gradient24.png');
         this.load.image('floor', 'https://labs.phaser.io/assets/sprites/platform.png');
         this.load.image('player', 'https://labs.phaser.io/assets/sprites/phaser-dude.png');
         this.load.image('mine', 'https://labs.phaser.io/assets/sprites/wasp.png');
         this.load.image('laser', 'https://labs.phaser.io/assets/sprites/longarrow.png');
         this.load.image('coin', 'https://labs.phaser.io/assets/sprites/apple.png');
+        this.load.image('powerup', 'https://labs.phaser.io/assets/sprites/orb-blue.png');
+        this.load.image('smoke', 'https://labs.phaser.io/assets/particles/white-smoke.png');
     }
 
     create() {
         isGameOver = false;
         
-        // Création du décor
+        // Décors et Physique
         background = this.add.tileSprite(400, 225, 800, 450, 'bg').setTint(0x2ecc71);
         ground = this.add.tileSprite(400, 435, 800, 40, 'floor').setTint(0x7e5109);
         this.physics.add.existing(ground, true);
 
-        // Création du joueur avec TES réglages
-        player = this.physics.add.sprite(150, 200, 'player');
-        player.setGravityY(SETTINGS.gravity);
-        player.setCollideWorldBounds(true);
-        this.physics.add.collider(player, ground);
+        // Particules (Jetpack)
+        this.emitter = this.add.particles(0, 0, 'smoke', {
+            speed: { min: 100, max: 200 },
+            scale: { start: 0.5, end: 0 },
+            lifespan: 400,
+            emitting: false
+        });
 
-        // Groupes d'objets
+        // Joueur
+        player = this.physics.add.sprite(150, 200, 'player');
+        player.setGravityY(SETTINGS.gravity).setCollideWorldBounds(true);
+        this.physics.add.collider(player, ground);
+        this.emitter.startFollow(player, -10, 20);
+
+        // Groupes
         obstacles = this.physics.add.group();
         this.coins = this.physics.add.group();
+        this.powerups = this.physics.add.group();
 
-        // Timers (utilisent les SETTINGS du haut)
+        // Timers
         this.time.addEvent({ delay: SETTINGS.spawnDelay, callback: this.spawnObstacle, callbackScope: this, loop: true });
-        
-        // UI (Texte)
-        this.scoreText = this.add.text(20, 20, 'Score: 0', { fontSize: '24px', fill: '#fff' });
-        this.livesText = this.add.text(650, 20, '❤️❤️❤️', { fontSize: '24px' });
+        this.time.addEvent({ delay: 800, callback: this.spawnCoin, callbackScope: this, loop: true });
+        this.time.addEvent({ delay: 10000, callback: this.spawnPowerup, callbackScope: this, loop: true });
+
+        // Interface
+        this.scoreText = this.add.text(20, 20, 'DISTANCE: 0m', { fontSize: '28px', fill: '#fff', fontStyle: 'bold' });
+        this.livesText = this.add.text(650, 20, '❤️❤️❤️', { fontSize: '28px' });
 
         // Contrôles
-        this.input.on('pointerdown', () => { this.jump(); });
-    }
+        this.input.on('pointerdown', () => { this.isThrusting = true; });
+        this.input.on('pointerup', () => { this.isThrusting = false; });
 
-    // ==========================================
-    // 3. LES ACTIONS DU JEU
-    // ==========================================
-
-    jump() {
-        if (isGameOver) return;
-        player.setVelocityY(SETTINGS.jumpForce); // Utilise ta force de saut
+        // Collisions
+        this.physics.add.overlap(player, obstacles, this.hitObstacle, null, this);
+        this.physics.add.overlap(player, this.coins, this.collectCoin, null, this);
+        this.physics.add.overlap(player, this.powerups, this.collectPowerup, null, this);
     }
 
     update() {
         if (isGameOver) return;
 
-        // Défilement du décor
+        // Gestion du Jetpack (La fluidité)
+        if (this.isThrusting) {
+            player.setAccelerationY(SETTINGS.thrust);
+            this.emitter.emitting = true;
+            player.angle = -10;
+        } else {
+            player.setAccelerationY(0);
+            this.emitter.emitting = false;
+            player.angle = 5;
+        }
+
+        // Vitesse progressive
+        if (this.gameSpeed < SETTINGS.maxSpeed) this.gameSpeed += 0.001;
+
         background.tilePositionX += this.gameSpeed * 0.2;
-        ground.tilePositionX += this.gameSpeed;
-
-        // Score
+        ground.tilePositionX += this.gameSpeed * 2;
         this.score += 0.1;
-        this.scoreText.setText('Score: ' + Math.floor(this.score));
+        this.scoreText.setText(`DISTANCE: ${Math.floor(this.score)}m`);
 
-        // Mouvement des obstacles
-        [obstacles, this.coins].forEach(group => {
-            group.getChildren().forEach(item => {
-                item.x -= this.gameSpeed;
-                if (item.x < -100) item.destroy();
-            });
+        // Magnétisme (Si power-up actif)
+        if (this.hasMagnet) {
+            this.coins.getChildren().forEach(c => this.physics.moveToObject(c, player, 600));
+        }
+
+        // Nettoyage objets hors-écran
+        [obstacles, this.coins, this.powerups].forEach(g => {
+            g.getChildren().forEach(i => { i.x -= this.gameSpeed; if(i.x < -100) i.destroy(); });
         });
-
-        // Collision
-        this.physics.add.overlap(player, obstacles, this.hitObstacle, null, this);
-        this.physics.add.overlap(player, this.coins, (p, c) => { c.destroy(); }, null, this);
     }
 
+    // ==========================================
+    // 3. FONCTIONS SPÉCIFIQUES (TES LASERS ET BONUS)
+    // ==========================================
     spawnObstacle() {
         let y = Phaser.Math.Between(50, 380);
-        let obs = obstacles.create(900, y, 'mine').setScale(0.8);
+        let type = Phaser.Math.RND.pick(['laser', 'mine']);
+        let obs = obstacles.create(900, y, type);
         obs.body.allowGravity = false;
+        if(type === 'laser') obs.setScale(0.5).setAngle(Phaser.Math.RND.pick([0, 45, 90]));
+    }
+
+    collectCoin(p, c) { c.destroy(); this.coinsCollected++; }
+
+    collectPowerup(p, pu) {
+        pu.destroy();
+        this.hasMagnet = true;
+        this.time.delayedCall(5000, () => this.hasMagnet = false);
     }
 
     hitObstacle(p, obs) {
         if (this.isInvincible) return;
         this.lives--;
+        this.updateLivesUI();
         obs.destroy();
-        if (this.lives <= 0) this.gameOver();
+        if (this.lives <= 0) this.showGameOver();
         else {
             this.isInvincible = true;
             p.setAlpha(0.5);
-            this.time.delayedCall(1500, () => { this.isInvincible = false; p.setAlpha(1); });
+            this.time.delayedCall(SETTINGS.invincibilityTime, () => { this.isInvincible = false; p.setAlpha(1); });
         }
     }
 
-    gameOver() {
-        this.physics.pause();
+    updateLivesUI() {
+        let h = ""; for(let i=0; i<3; i++) h += (i < this.lives) ? "❤️" : "🖤";
+        this.livesText.setText(h);
+    }
+
+    showGameOver() {
         isGameOver = true;
-        this.add.text(400, 225, 'GAME OVER', { fontSize: '64px', fill: '#f00' }).setOrigin(0.5);
+        this.physics.pause();
+        this.emitter.emitting = false;
+        
+        // Ecran de fin
+        let rect = this.add.rectangle(400, 225, 800, 450, 0x000000, 0.8);
+        this.add.text(400, 150, 'ZOO OVER', { fontSize: '60px', fill: '#0f0' }).setOrigin(0.5);
+        
+        // Bouton Recommencer
+        let btnRetry = this.add.text(400, 250, 'REESSAYER', { fontSize: '32px', backgroundColor: '#27ae60' })
+            .setPadding(10).setInteractive().setOrigin(0.5);
+        btnRetry.on('pointerdown', () => this.scene.restart());
+
+        // Bouton Menu
+        let btnMenu = this.add.text(400, 320, 'MENU PRINCIPAL', { fontSize: '24px', backgroundColor: '#e67e22' })
+            .setPadding(10).setInteractive().setOrigin(0.5);
+        btnMenu.on('pointerdown', () => window.location.href = 'index.html');
     }
 }
 
