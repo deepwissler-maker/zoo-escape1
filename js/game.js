@@ -45,12 +45,48 @@ class MainScene extends Phaser.Scene {
         this.livesText.setText(display);
     }
 
-    showGameOver() {
+   showGameOver() {
         this.physics.pause();
+        isGameOver = true;
+
+        // 1. Fond sombre pour faire ressortir le menu
         this.add.rectangle(400, 225, 800, 450, 0x000000, 0.7);
-        this.add.text(400, 225, 'GAME OVER', { fontSize: '64px', fill: '#f00' }).setOrigin(0.5);
-        let btn = this.add.text(400, 320, 'RECOMMENCER', { fontSize: '32px', backgroundColor: '#27ae60' }).setPadding(10).setInteractive().setOrigin(0.5);
-        btn.on('pointerdown', () => this.scene.restart());
+
+        // 2. Texte GAME OVER
+        this.add.text(400, 150, 'GAME OVER', { 
+            fontSize: '64px', 
+            fill: '#f00', 
+            fontStyle: 'bold' 
+        }).setOrigin(0.5);
+
+        // 3. Bouton REJOUER
+        let btnRetry = this.add.text(400, 250, ' RECOMMENCER ', { 
+            fontSize: '28px', 
+            backgroundColor: '#27ae60',
+            fill: '#fff'
+        }).setPadding(10).setInteractive().setOrigin(0.5);
+
+        btnRetry.on('pointerdown', () => {
+            this.scene.restart();
+        });
+
+        // 4. Bouton RETOUR AU MENU (La nouveauté)
+        let btnMenu = this.add.text(400, 330, ' RETOUR AU MENU ', { 
+            fontSize: '28px', 
+            backgroundColor: '#e67e22',
+            fill: '#fff'
+        }).setPadding(10).setInteractive().setOrigin(0.5);
+
+        btnMenu.on('pointerdown', () => {
+            // Ici, on redirige vers ta page d'accueil (index.html)
+            window.location.href = 'index.html'; 
+        });
+
+        // Petit effet au survol des boutons (optionnel mais cool)
+        [btnRetry, btnMenu].forEach(btn => {
+            btn.on('pointerover', () => btn.setStyle({ fill: '#000' }));
+            btn.on('pointerout', () => btn.setStyle({ fill: '#fff' }));
+        });
     }
 
     update() {
