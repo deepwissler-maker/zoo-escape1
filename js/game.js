@@ -6,7 +6,7 @@ class MainScene extends Phaser.Scene {
         this.load.image('bg', 'https://labs.phaser.io/assets/skies/gradient24.png');
         this.load.image('floor', 'https://labs.phaser.io/assets/sprites/platform.png');
         this.load.image('player', 'https://labs.phaser.io/assets/sprites/phaser-dude.png');
-        this.load.image('mine', 'https://labs.phaser.io/assets/sprites/wasp.png');
+        this.load.image('bomb', 'https://labs.phaser.io/assets/sprites/bomb.png');
         this.load.image('laser', 'https://labs.phaser.io/assets/sprites/longarrow.png');
         this.load.image('coin', 'https://labs.phaser.io/assets/sprites/apple.png');
         loadAudio(this);
